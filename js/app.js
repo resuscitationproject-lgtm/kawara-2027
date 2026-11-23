@@ -1,3 +1,4 @@
+import { unlockProposal } from "./admin.js";
 import { spots, themes } from "./spots.js";
 import { icon } from "./icons.js";
 import { read, collect, backup, restore } from "./progress.js";
@@ -137,40 +138,22 @@ function book() {
     '<p class="note">掲載する40スポットは見積もり用の仮設定です。</p>'
   );
 }
-function plans() {
-  return (
-    '<fieldset><legend>体験するプラン</legend><div class="plan-grid">' +
+function plans(prices) {
+  const modes = [
+    ["ar", "① AR表示付き", "画像を認識すると、3Dのえんぴつが現れます。"],
     [
-      [
-        "ar",
-        "① AR表示付き",
-        "380,000",
-        "画像を認識すると、3Dのえんぴつが現れます。",
-      ],
-      [
-        "plain",
-        "② 画像認識のみ",
-        "230,000",
-        "画像を認識すると、すぐにスタンプを取得します。",
-      ],
-    ]
-      .map(
-        ([id, label, price, desc]) =>
-          '<label class="plan"><input type="radio" name="plan" value="' +
-          id +
-          '" ' +
-          (id === plan ? "checked" : "") +
-          "><strong>" +
-          label +
-          "</strong><span>" +
-          price +
-          "円（税別）</span><p>" +
-          desc +
-          "</p></label>",
-      )
-      .join("") +
-    "</div></fieldset>"
-  );
+      "plain",
+      "② 画像認識のみ",
+      "画像を認識すると、すぐにスタンプを取得します。",
+    ],
+  ];
+  const choices = modes.map(([id, label, description]) => {
+    const price = prices
+      ? `<span>${Number(prices[id]).toLocaleString("ja-JP")}円（税別）</span>`
+      : "";
+    return `<label class="plan"><input type="radio" name="plan" value="${id}" ${id === plan ? "checked" : ""}><strong>${label}</strong>${price}<p>${description}</p></label>`;
+  });
+  return `<fieldset><legend>体験するプラン</legend><div class="plan-grid">${choices.join("")}</div></fieldset>`;
 }
 function scan() {
   return (
@@ -196,12 +179,36 @@ function options() {
     )
     .join("");
 }
+let proposal = null;
+function escapeText(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
 function demo() {
+  if (!proposal) {
+    return (
+      title("ADMIN LOGIN", "管理者ログイン") +
+      `
+      <form id="admin-login" method="post" class="panel login-panel">
+        <p>見積もりを開くには、管理用のIDとパスワードを入力してください。</p>
+        <label class="field">管理用ID<input required name="username" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+        <label class="field">パスワード<input required type="password" name="password" autocomplete="current-password"></label>
+        <button class="button primary" type="submit">ログイン</button>
+        <p id="login-status" role="status"></p>
+      </form>`
+    );
+  }
   return (
-    title("PROPOSAL DEMO", "見積もりデモ") +
-    '<section class="panel"><h2>同じカードで2つのプランを比較</h2><p>両プランとも、40スポットの画像認識、スタンプ帳、端末保存、バックアップ・復元を体験できます。</p>' +
-    plans() +
-    '<div class="actions"><a class="button primary" href="#scan">選んだプランを体験</a><a class="button" href="#cards">掲示画像を見る</a></div></section><section class="panel"><h2>見積もりの前提</h2><p>提案価格には最大40か所の設定、Web公開・予定サブドメインの設定、基本動作確認、開催3か月間の基本運用サポートを含みます。</p><p>スポット・認識画像は仮設定です。正式な名称・画像は発注者からご提供いただき、開始日・AR表示内容・対象端末・検収条件を協議します。</p><p>新規3D制作、掲示物の印刷・設置、現地での全スポット検証、景品応募管理は別途見積もりです。</p></section>'
+    title("ADMIN", "管理画面") +
+    `
+    <section class="panel"><h2>${escapeText(proposal.heading)}</h2><p>${escapeText(proposal.intro)}</p>
+      ${plans(proposal.prices)}
+      <div class="actions"><a class="button primary" href="#scan">選んだプランを体験</a><a class="button" href="#cards">掲示画像を見る</a></div>
+    </section>
+    <section class="panel"><h2>見積もりの前提</h2>${proposal.terms.map((text) => `<p>${escapeText(text)}</p>`).join("")}</section>
+    <button id="admin-logout" class="button">ログアウト</button>`
   );
 }
 function guide() {
@@ -259,9 +266,45 @@ document.querySelector(".close").onclick = () => dialog.close();
 dialog.addEventListener("click", (e) => {
   if (e.target === dialog) dialog.close();
 });
+main.addEventListener("submit", async (event) => {
+  const form = event.target;
+  if (form.id !== "admin-login") return;
+  event.preventDefault();
+  const submit = form.querySelector("button");
+  if (submit.disabled) return;
+  submit.disabled = true;
+  const status = form.querySelector("#login-status");
+  status.textContent = "確認しています…";
+  try {
+    const data = await unlockProposal(
+      form.elements.username.value,
+      form.elements.password.value,
+    );
+    if (!form.isConnected || getPage() !== "demo") return;
+    proposal = data;
+    form.reset();
+    render();
+    main.focus();
+  } catch (error) {
+    status.textContent =
+      error.message === "IDまたはパスワードが違います。"
+        ? error.message
+        : "見積もりを開けません。通信状況を確認して再度お試しください。";
+    form.elements.password.value = "";
+    form.elements.password.focus();
+  } finally {
+    submit.disabled = false;
+  }
+});
 main.addEventListener("click", async (e) => {
   const button = e.target.closest("button");
   if (!button) return;
+  if (button.id === "admin-logout") {
+    proposal = null;
+    render();
+    main.querySelector("[name=username]").focus();
+    return;
+  }
   if (button.dataset.spot) {
     const s = spots.find((s) => s.id === button.dataset.spot);
     show(
@@ -367,6 +410,10 @@ window.addEventListener("hashchange", () => {
   render();
   window.scrollTo(0, 0);
   main.focus({ preventScroll: true });
+});
+window.addEventListener("pagehide", () => {
+  proposal = null;
+  if (getPage() === "demo") render();
 });
 window.addEventListener("pageshow", render);
 window.addEventListener("storage", () => {

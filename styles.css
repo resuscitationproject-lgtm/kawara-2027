@@ -744,3 +744,13 @@ dialog .button {
     padding: 0;
   }
 }
+
+.login-panel {
+  max-width: 36rem;
+}
+.login-panel .field input {
+  font: inherit;
+}
+.login-panel #login-status:empty {
+  margin: 0;
+}
