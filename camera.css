@@ -1,0 +1,67 @@
+.camera-body {
+  background: #172b26;
+  color: #fffaf0;
+  overflow: hidden;
+}
+.camera-body #stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  isolation: isolate;
+}
+.camera-body .camera-bar,
+.camera-guide {
+  position: fixed;
+  z-index: 2;
+  left: max(15px, env(safe-area-inset-left));
+  right: max(15px, env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.camera-bar {
+  top: max(15px, env(safe-area-inset-top));
+}
+.camera-bar b,
+.camera-guide {
+  background: #19382ff2;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.camera-guide {
+  bottom: max(14px, env(safe-area-inset-bottom));
+  display: block;
+  text-align: center;
+  margin: auto;
+  max-width: 580px;
+}
+.camera-guide .actions {
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.camera-guide .button,
+.camera-bar .button {
+  min-height: 40px;
+  font-size: 0.88rem;
+  padding: 7px 12px;
+}
+.camera-guide #camera-status {
+  font-size: 1.17rem;
+  font-weight: 700;
+}
+.camera-guide #hint {
+  font-size: 0.9rem;
+}
+.frame {
+  position: fixed;
+  width: min(48vmin, 320px);
+  aspect-ratio: 1;
+  top: 43%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px dashed #fffae4aa;
+  border-radius: 12px;
+  pointer-events: none;
+}

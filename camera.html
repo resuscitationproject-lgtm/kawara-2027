@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <link rel="icon" href="data:," />
+    <title>スタンプカメラ｜香春町</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="camera.css" />
+    <script src="assets/vendor/aframe-1.6.0.min.js" defer></script>
+    <script src="assets/vendor/mindar-image-aframe-1.2.5.min.js" defer></script>
+    <script type="module" src="js/camera.js"></script>
+  </head>
+  <body class="camera-body">
+    <div id="stage"></div>
+    <div class="camera-bar">
+      <b id="mode">スタンプカメラ</b><a class="button" href="./#scan">閉じる</a>
+    </div>
+    <div class="frame" aria-hidden="true" hidden></div>
+    <section class="camera-guide">
+      <p id="camera-status" role="status">カメラを準備しています…</p>
+      <p id="hint">カメラの使用を許可してください。</p>
+      <div class="actions">
+        <a class="button" href="./#book">スタンプ帳を見る</a
+        ><a class="button" href="./#scan">操作体験に戻る</a>
+      </div>
+    </section>
+  </body>
+</html>
