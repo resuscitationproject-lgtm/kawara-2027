@@ -45,15 +45,17 @@ export function collect(id) {
   }));
 }
 export function restore(data) {
-  validate(data);
+  const imported = validate(data);
+  const importedCount = Object.keys(imported.stamps).length;
   return change((p) => {
     const stamps = { ...data.stamps, ...p.stamps };
+    const currentCount = Object.keys(p.stamps).length;
+    const totalCount = Object.keys(stamps).length;
+    const addedCount = totalCount - currentCount;
+    const unchangedCount = importedCount - addedCount;
     return {
       next: { ...p, stamps, updatedAt: new Date().toISOString() },
-      message:
-        Object.keys(stamps).length -
-        Object.keys(p.stamps).length +
-        "件を追加しました。",
+      message: `バックアップを読み込みました。バックアップ ${importedCount}件のうち、${addedCount}件を追加しました。現在の記録は${totalCount}件です。${unchangedCount ? " 同じスタンプはすでに記録されています。" : ""}`,
     };
   });
 }

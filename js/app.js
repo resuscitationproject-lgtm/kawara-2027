@@ -230,7 +230,7 @@ function data() {
     icon("save") +
     "JSONを保存（" +
     Object.keys(stamps).length +
-    '件）</button></section><section class="panel"><h2>バックアップから復元</h2><p>このデモで保存したJSONを選ぶと、現在の記録を維持して未取得分を追加します。</p><label class="field">バックアップファイル<input type="file" accept=".json,application/json" id="import"></label><p role="status" id="feedback"></p></section>'
+    '件）</button></section><section class="panel"><h2>バックアップから復元</h2><p>このデモで保存したJSONを選ぶと、現在の記録を維持して未取得分を追加します。同じスタンプを含む場合も、バックアップは読み込み済みとして結果を表示します。</p><label class="field">バックアップファイル<input type="file" accept=".json,application/json" id="import"></label><p role="status" aria-live="polite" id="feedback"></p></section>'
   );
 }
 function cards() {
