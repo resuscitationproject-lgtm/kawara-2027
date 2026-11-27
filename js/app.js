@@ -1,7 +1,7 @@
 import { unlockProposal } from "./admin.js";
 import { spots, themes } from "./spots.js";
 import { icon } from "./icons.js";
-import { read, collect, backup, restore } from "./progress.js";
+import { read, collect, backup, restore } from "./progress.js?v=device-1";
 const main = document.querySelector("main"),
   dialog = document.querySelector("dialog"),
   body = document.querySelector("#detail-body");
@@ -18,7 +18,7 @@ try {
 let stamps = {},
   readError = false;
 const notice =
-  "取得したスタンプは、ご利用のスマートフォンのブラウザ内に保存されます。ブラウザのデータ削除や端末変更等によって記録が失われる場合があります。大切な記録はバックアップ機能をご利用ください。";
+  "取得したスタンプは、ご利用のスマートフォンのブラウザ内に保存されます。ブラウザのデータ削除で記録が失われる場合があります。バックアップは同じ端末・ブラウザでの復元用です。機種変更時は引き継げない場合があります。";
 function load() {
   try {
     stamps = read().stamps;
@@ -230,7 +230,7 @@ function data() {
     icon("save") +
     "JSONを保存（" +
     Object.keys(stamps).length +
-    '件）</button></section><section class="panel"><h2>バックアップから復元</h2><p>このデモで保存したJSONを選ぶと、現在の記録を維持して未取得分を追加します。同じスタンプを含む場合も、バックアップは読み込み済みとして結果を表示します。</p><label class="field">バックアップファイル<input type="file" accept=".json,application/json" id="import"></label><p role="status" aria-live="polite" id="feedback"></p></section>'
+    '件）</button><p id="export-status" role="status"></p></section><section class="panel"><h2>バックアップから復元</h2><p>同じ端末・ブラウザで保存したバージョン2のJSONを選ぶと、現在の記録を維持して未取得分を追加します。以前のバージョン1のファイルは読み込めません。機種変更などでお困りの場合は運営窓口にご相談ください。</p><label class="field">バックアップファイル<input type="file" accept=".json,application/json" id="import"></label><p role="status" aria-live="polite" id="feedback"></p></section>'
   );
 }
 function cards() {
@@ -356,9 +356,11 @@ main.addEventListener("click", async (e) => {
   }
   if (button.id === "print") window.print();
   if (button.id === "export") {
+    button.disabled = true;
     try {
+      const data = await backup();
       const url = URL.createObjectURL(
-        new Blob([JSON.stringify(backup(), null, 2)], {
+        new Blob([JSON.stringify(data, null, 2)], {
           type: "application/json",
         }),
       );
@@ -369,8 +371,10 @@ main.addEventListener("click", async (e) => {
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 30000);
     } catch {
-      document.querySelector("#feedback").textContent =
-        "記録を読み出せませんでした。";
+      const status = document.querySelector("#export-status");
+      if (status) status.textContent = "バックアップを作成できませんでした。ブラウザの保存設定を確認してください。";
+    } finally {
+      button.disabled = false;
     }
   }
 });
