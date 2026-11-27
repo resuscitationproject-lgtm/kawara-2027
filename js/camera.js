@@ -1,5 +1,5 @@
 import { spots } from "./spots.js";
-import { collect } from "./progress.js";
+import { collectWithMilestone } from "./progress.js?v=milestones-1";
 const withAr = new URLSearchParams(location.search).get("plan") !== "plain";
 const message = document.querySelector("#camera-status"),
   hint = document.querySelector("#hint"),
@@ -81,8 +81,13 @@ function start() {
         ? "画像にカメラを向けたまま、3Dのえんぴつを見てみましょう。"
         : "別の掲示画像も読み取れます。";
       try {
-        const result = await collect(spot.id);
-        if (sequence === token) message.textContent = spot.name + "　" + result;
+        const result = await collectWithMilestone(spot.id);
+        if (result.milestone) {
+          stop();
+          location.href = result.milestone === 40 ? "./#complete" : `./#reward-${result.milestone}`;
+          return;
+        }
+        if (sequence === token) message.textContent = spot.name + "　" + result.message;
       } catch {
         if (sequence === token)
           message.textContent =

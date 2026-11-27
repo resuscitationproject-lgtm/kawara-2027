@@ -45,6 +45,18 @@ export function collect(id) {
     message: p.stamps[id] ? "取得済みです" : "スタンプを取得しました！",
   }));
 }
+export function collectWithMilestone(id) {
+  if (!ids.has(id)) throw Error("スポットが見つかりません。");
+  const update = () => {
+    const progress = read();
+    const alreadyCollected = Boolean(progress.stamps[id]);
+    const next = addStamp(progress, id);
+    const count = Object.keys(next.stamps).filter((stampId) => ids.has(stampId)).length;
+    localStorage.setItem(key, JSON.stringify(next));
+    return { message: alreadyCollected ? "取得済みです" : "スタンプを取得しました！", milestone: !alreadyCollected && count % 5 === 0 ? count : null };
+  };
+  return navigator.locks ? navigator.locks.request(key, update) : update();
+}
 export async function restore(data) {
   if (!data || data.version !== 2 || data.eventId !== eventId)
     throw Error("このイベントで保存したバックアップ（形式バージョン2）を選んでください。");

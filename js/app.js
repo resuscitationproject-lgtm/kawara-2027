@@ -1,7 +1,7 @@
 import { unlockProposal } from "./admin.js";
 import { spots, themes } from "./spots.js";
 import { icon } from "./icons.js";
-import { read, collect, backup, restore } from "./progress.js?v=device-1";
+import { read, collectWithMilestone, backup, restore } from "./progress.js?v=milestones-1";
 const main = document.querySelector("main"),
   dialog = document.querySelector("dialog"),
   body = document.querySelector("#detail-body");
@@ -80,7 +80,8 @@ function progress() {
     count +
     '">' +
     pct +
-    "%</progress></div></section>"
+    "%</progress></div></section>" +
+    (count >= 5 ? `<div class="milestone-links">${Array.from({length: Math.floor(count / 5)}, (_, index) => (index + 1) * 5).map((n) => `<a class="textlink" href="#${n === 40 ? "complete" : "reward-" + n}">${n === 40 ? "コンプリート画面" : n + "個達成の特典"}</a>`).join("")}</div>` : "")
   );
 }
 function title(eng, jp) {
@@ -207,7 +208,7 @@ function demo() {
       ${plans(proposal.prices)}
       <div class="actions"><a class="button primary" href="#scan">選んだプランを体験</a><a class="button" href="#cards">掲示画像を見る</a></div>
     </section>
-    <section class="panel"><h2>見積もりの前提</h2>${proposal.terms.map((text) => `<p>${escapeText(text)}</p>`).join("")}</section>
+    <section class="panel"><h2>見積もりの前提</h2><p>AR表示付きと画像認識のみの2パターンでご提案します。スタンプ画像・認識用画像は発注者からご提供いただきます。</p><p>独自ドメインをご希望の場合は、別途打ち合わせのうえお見積もりします。</p><p>5個ごとの特典内容、景品の受け取り方法、事務局による復元と管理者認証の運用は、別途協議します。</p></section>
     <button id="admin-logout" class="button">ログアウト</button>`
   );
 }
@@ -243,15 +244,26 @@ function cards() {
     '" alt="画像認識用の試作カード"><figcaption id="caption">01　香春岳</figcaption></figure><div class="actions"><button class="button" id="print">このカードを印刷</button><a href="#scan" class="textlink">スタンプ取得に戻る</a></div></section>'
   );
 }
-const pages = { home, book, scan, demo, guide, data, cards };
+function reward() {
+  const milestone = Number(getPage().slice(7));
+  if (!Number.isInteger(milestone) || milestone < 5 || milestone > 35 || milestone % 5 || Object.keys(stamps).length < milestone)
+    return title("REWARD", "特典") + '<section class="panel"><p>まだ達成していません。</p><a class="button" href="#book">スタンプ帳を見る</a></section>';
+  return title("REWARD", `${milestone}個達成！`) + `<section class="panel reward-panel"><div class="reward-icon">${icon("stamp")}</div><h2>おめでとうございます！</h2><p>スタンプを${milestone}個集めました。</p><p>特典内容は今後決定します。</p><a class="button primary" href="#book">スタンプ帳を見る</a></section>`;
+}
+function complete() {
+  if (Object.keys(stamps).length < 40) return title("COMPLETE", "コンプリート") + '<section class="panel"><p>40個集めると、この画面を表示できます。</p><a class="button" href="#book">スタンプ帳を見る</a></section>';
+  return title("COMPLETE", "コンプリート！") + `<section class="panel reward-panel"><div class="reward-icon">${icon("stamp")}</div><h2>40個のスタンプを達成！</h2><p>香春町を巡っていただき、ありがとうございます。</p><p>この画面を観光協会事務局でご提示ください。景品をお受け取りいただけます。</p><h2>記録をバックアップしましょう</h2><p>大切なスタンプ記録を守るため、バックアップの保存をおすすめします。</p><button class="button primary" id="export">${icon("save")}バックアップを保存</button><p id="export-status" role="status"></p><a class="textlink" href="#book">スタンプ帳を見る</a></section>`;
+}
+const pages = { home, book, scan, demo, guide, data, cards, complete };
 function render() {
   if (dialog.open) dialog.close();
   load();
-  const page = Object.hasOwn(pages, getPage()) ? getPage() : "home";
+  const requested = getPage();
+  const page = /^reward-\d+$/.test(requested) ? "reward" : Object.hasOwn(pages, requested) ? requested : "home";
   main.innerHTML =
     (readError
       ? '<p role="alert">端末の記録を読み込めません。ブラウザの保存設定や既存データを確認してください。</p>'
-      : "") + pages[page]();
+      : "") + (page === "reward" ? reward() : pages[page]());
   document.querySelectorAll("header a").forEach((a) => {
     if (a.hash === "#" + page) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
@@ -333,13 +345,17 @@ main.addEventListener("click", async (e) => {
     );
     button.disabled = true;
     try {
-      const msg = await collect(s.id);
+      const result = await collectWithMilestone(s.id);
+      if (result.milestone) {
+        location.hash = result.milestone === 40 ? "complete" : `reward-${result.milestone}`;
+        return;
+      }
       show(
         seal(s) +
           '<p class="meta">操作体験 ／ No. ' +
           s.num +
           "</p><h2>" +
-          msg +
+          result.message +
           "</h2><p>" +
           s.name +
           '</p><a class="button primary" href="#book">' +
